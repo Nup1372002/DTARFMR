@@ -14,12 +14,14 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 class Node:
-    def __init__(self, feature=None, threshold=None, left=None, right=None, *, value=None):
+    def __init__(self, feature=None, threshold=None, left=None, right=None, *, value=None, entropy=None, value_counts=None):
         self.feature = feature
         self.threshold = threshold
         self.left = left
         self.right = right
         self.value = value
+        self.entropy = entropy
+        self.value_counts = value_counts
 
     def is_leaf_node(self):
         return self.value is not None
@@ -44,7 +46,7 @@ class DecisionTree:
 
         if (depth >= self.max_depth or n_labels == 1 or n_samples < self.min_samples_split):
             leaf_value = self._most_common_label(y)
-            return Node(value=leaf_value)
+            return Node(value=leaf_value, entropy=self._entropy(y), value_counts=dict(Counter(y)))
 
         feat_idxs = np.random.choice(n_feats, self.n_features, replace=False)
         best_feature, best_thresh = self._best_split(X, y, feat_idxs)
@@ -54,10 +56,11 @@ class DecisionTree:
             left = self._grow_tree(X.iloc[left_idxs, :], y.iloc[left_idxs], depth + 1)
             right = self._grow_tree(X.iloc[right_idxs, :], y.iloc[right_idxs], depth + 1)
             self.feature_importances_[best_feature] += self._information_gain(y, X.iloc[:, best_feature], best_thresh)
-            return Node(best_feature, best_thresh, left, right)
+            return Node(best_feature, best_thresh, left, right, entropy=self._entropy(y),
+                        value_counts=dict(Counter(y)))
 
         leaf_value = self._most_common_label(y)
-        return Node(value=leaf_value)
+        return Node(value=leaf_value, entropy=self._entropy(y), value_counts=dict(Counter(y)))
 
     def _best_split(self, X, y, feat_idxs):
         best_gain = -1
@@ -150,10 +153,10 @@ class DecisionTree:
             return
 
         if node.is_leaf_node():
-            plt.text(x_offset, y_offset, "Class " + str(node.value), ha='center', va='center', bbox=dict(facecolor='lightgray', alpha=0.5))
+            plt.text(x_offset, y_offset, f"Class {node.value}\nEntropy: {node.entropy:.2f}\nValue: {node.value_counts}", ha='center', va='center', bbox=dict(facecolor='lightgray', alpha=0.5))
             return
 
-        plt.text(x_offset, y_offset, "X[" + str(node.feature) + "] <= " + str(node.threshold), ha='center', va='center', bbox=dict(facecolor='lightgray', alpha=0.5))
+        plt.text(x_offset, y_offset, f"X[{node.feature}] <= {node.threshold}\nEntropy: {node.entropy:.2f}\nValue: {node.value_counts}", ha='center', va='center', bbox=dict(facecolor='lightgray', alpha=0.5))
         if node.left is not None:
             plt.plot([x_offset, x_offset - 0.1 * width], [y_offset - 0.1, y_offset - 1], '-k')
             new_x_offset = x_offset - 0.1 * width
