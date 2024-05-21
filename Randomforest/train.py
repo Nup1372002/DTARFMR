@@ -209,6 +209,10 @@ def feature_importance_visualizer(X, model, label, color=None, grid=None):
     plt.title("Feature Importances According to " + label + " Classifier")
     if grid:
         plt.grid(alpha=0.5)
+    # Print feature importance values with corresponding feature names
+    sorted_idx = np.argsort(feature_importance)[::-1]
+    for idx in sorted_idx:
+        print(f"{features_list[idx]}: {feature_importance[idx]}")
     plt.show()
     
 # Reading the raw CSV data file
@@ -233,14 +237,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_
 column_names = ["method", "accuracy", "precision", "recall", "f1", "roc_auc"]
 performance_metrics = pd.DataFrame(columns=column_names)
 
-label = "Decision Tree"
-dt = DecisionTree()
-dt, performance_metrics, dt_confusion = model_predictions(dt, X_train, X_test, y_train, y_test, performance_metrics, label)
-feature_importance_visualizer(X, dt, label, color="blueviolet")
-
 # Random Forest
 label = "Random Forest"
-rf = RandomForest(n_trees=20)
+rf = RandomForest()
 rf, performance_metrics, rf_confusion = model_predictions(rf, X_train, X_test, y_train, y_test, performance_metrics, label)
 feature_importance_visualizer(X, rf, label, color="blueviolet")
 
